@@ -3,10 +3,18 @@ import { z } from "zod";
 
 const GATEWAY = "https://connector-gateway.lovable.dev/google_calendar/calendar/v3";
 const TZ_OFFSET = "-03:00"; // Horário de Brasília
-const DURATION_MIN = 30;
-const START_HOUR = 9;
-const END_HOUR = 18;
-const DAYS_AHEAD = 14;
+// Scheduling config — adjust here
+export const SCHEDULE = {
+  durationMin: 30,
+  bufferMin: 15,
+  startHour: 9,
+  endHour: 17,
+  workDays: [1, 2, 3, 4, 5], // Mon–Fri
+  daysAhead: 14,
+  minNoticeHours: 2,
+};
+const DURATION_MIN = SCHEDULE.durationMin;
+const DAYS_AHEAD = SCHEDULE.daysAhead;
 
 function gwHeaders() {
   const lk = process.env["LOVABLE_API_KEY"];
@@ -76,20 +84,21 @@ export const getAvailability = createServerFn({ method: "GET" }).handler(async (
   });
   const busy: { start: string; end: string }[] = fb.calendars?.primary?.busy ?? [];
   const busyR: [number, number][] = busy.map((b) => [Date.parse(b.start), Date.parse(b.end)]);
-  const minStart = now.getTime() + 2 * 3600_000;
+  const minStart = now.getTime() + SCHEDULE.minNoticeHours * 3600_000;
+  const buf = SCHEDULE.bufferMin * 60_000;
   const days: { date: string; slots: string[] }[] = [];
   for (let i = 0; i <= DAYS_AHEAD; i++) {
     const date = brDate(new Date(now.getTime() + i * 86400_000));
     const dow = new Date(`${date}T12:00:00${TZ_OFFSET}`).getUTCDay();
-    if (dow === 0 || dow === 6) continue;
+    if (!SCHEDULE.workDays.includes(dow)) continue;
     const slots: string[] = [];
-    for (let m = START_HOUR * 60; m + DURATION_MIN <= END_HOUR * 60; m += DURATION_MIN) {
+    for (let m = SCHEDULE.startHour * 60; m + DURATION_MIN <= SCHEDULE.endHour * 60; m += DURATION_MIN + SCHEDULE.bufferMin) {
       const hh = String(Math.floor(m / 60)).padStart(2, "0");
       const mm = String(m % 60).padStart(2, "0");
       const s = Date.parse(`${date}T${hh}:${mm}:00${TZ_OFFSET}`);
       const e = s + DURATION_MIN * 60_000;
       if (s < minStart) continue;
-      if (busyR.some(([bs, be]) => s < be && e > bs)) continue;
+      if (busyR.some(([bs, be]) => s < be + buf && e + buf > bs)) continue;
       slots.push(new Date(s).toISOString());
     }
     if (slots.length) days.push({ date, slots });
@@ -113,20 +122,22 @@ export const bookSlot = createServerFn({ method: "POST" })
     const fb = await gw("/freeBusy", {
       method: "POST",
       body: JSON.stringify({
-        timeMin: new Date(s).toISOString(),
-        timeMax: new Date(e).toISOString(),
+        timeMin: new Date(s - SCHEDULE.bufferMin * 60_000).toISOString(),
+        timeMax: new Date(e + SCHEDULE.bufferMin * 60_000).toISOString(),
         items: [{ id: "primary" }],
       }),
     });
     if ((fb.calendars?.primary?.busy ?? []).length) throw new Error("SLOT_TAKEN");
 
-    const description = `Lead gerado pelo formulário da Agência Scase.
+    const description = `Novo lead Scase
 
-Empresa: ${lead.empresa}
+Empresa:
+${lead.empresa}
 
-E-mail: ${lead.email}
+E-mail:
+${lead.email}
 
-Investe atualmente em marketing:
+Investe em marketing:
 ${lead.investe_marketing}
 
 WhatsApp:
