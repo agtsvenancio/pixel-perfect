@@ -4,7 +4,7 @@ import { z } from "zod";
 import { saveLead, getAvailability, bookSlot } from "@/lib/leads.functions";
 import { track, captureAttribution, maskPhone } from "@/lib/tracking";
 
-type Stage = 1 | 2 | 3 | 4 | "schedule" | "done";
+type Stage = "intro" | 1 | 2 | 3 | 4 | "schedule" | "done";
 type Booked = Awaited<ReturnType<typeof bookSlot>>;
 
 const fmtDay = (iso: string) =>
@@ -15,7 +15,7 @@ const fmtLong = (iso: string) =>
   new Date(iso).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "long", day: "2-digit", month: "long", year: "numeric" });
 
 export function LeadFlow() {
-  const [stage, setStage] = useState<Stage>(1);
+  const [stage, setStage] = useState<Stage>("intro");
   const [empresa, setEmpresa] = useState("");
   const [email, setEmail] = useState("");
   const [investe, setInveste] = useState<"Sim" | "Não" | "">("");
@@ -33,7 +33,7 @@ export function LeadFlow() {
   const fetchAvail = useServerFn(getAvailability);
   const book = useServerFn(bookSlot);
 
-  useEffect(() => track("form_start"), []);
+  const start = () => { track("form_start"); setStage(1); };
 
   const go = (s: Stage) => { setError(""); setStage(s); };
 
@@ -102,17 +102,29 @@ export function LeadFlow() {
   return (
     <div className="flow-card">
       {typeof stage === "number" && (
-        <div className="mb-10 flex items-center gap-3 text-xs tracking-widest text-muted-foreground">
-          <span>{stage} de 4</span>
+        <div className="mb-14 flex items-center gap-4">
+          <span className="font-mono-label">0{stage} / 04</span>
           <div className="h-px flex-1 bg-border">
-            <div className="h-px bg-primary transition-all duration-500" style={{ width: `${stage * 25}%` }} />
+            <div className="h-px bg-primary transition-all duration-300" style={{ width: `${stage * 25}%` }} />
           </div>
         </div>
       )}
 
       <div key={String(stage)} className="flow-step">
+        {stage === "intro" && (
+          <>
+            <p className="flow-eyebrow">01 / Diagnóstico</p>
+            <h1 className="flow-title">Vamos entender o momento da sua empresa.</h1>
+            <p className="flow-sub">Responda 4 perguntas rápidas e escolha um horário para conversar com nosso time.</p>
+            <div className="flex flex-wrap items-center gap-6">
+              <button className="flow-btn" onClick={start}>Começar</button>
+              <span className="font-mono-label">Leva menos de 1 minuto.</span>
+            </div>
+          </>
+        )}
         {stage === 1 && (
           <>
+            <p className="flow-eyebrow">01 / Empresa</p>
             <h2 className="flow-title">Qual é o nome da sua empresa?</h2>
             <input autoFocus className="flow-input" placeholder="Digite o nome da sua empresa" maxLength={150}
               value={empresa} onChange={(e) => setEmpresa(e.target.value)} onKeyDown={onEnter(submitStep1)} />
@@ -121,6 +133,7 @@ export function LeadFlow() {
         )}
         {stage === 2 && (
           <>
+            <p className="flow-eyebrow">02 / Contato</p>
             <h2 className="flow-title">Qual é o seu melhor e-mail?</h2>
             <input autoFocus type="email" inputMode="email" className="flow-input" placeholder="seuemail@empresa.com.br" maxLength={255}
               value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={onEnter(submitStep2)} />
@@ -129,6 +142,7 @@ export function LeadFlow() {
         )}
         {stage === 3 && (
           <>
+            <p className="flow-eyebrow">03 / Marketing</p>
             <h2 className="flow-title">Sua empresa investe em marketing atualmente?</h2>
             <div className="grid grid-cols-2 gap-4">
               {(["Sim", "Não"] as const).map((v) => (
@@ -139,12 +153,13 @@ export function LeadFlow() {
         )}
         {stage === 4 && (
           <>
+            <p className="flow-eyebrow">04 / WhatsApp</p>
             <h2 className="flow-title">Qual é o seu WhatsApp?</h2>
-            <p className="-mt-4 mb-6 text-muted-foreground">Vamos usar esse número apenas para falar sobre sua solicitação e sua reunião.</p>
+            <p className="flow-sub">Vamos usar esse número apenas para falar sobre sua solicitação e sua reunião.</p>
             <input autoFocus type="tel" inputMode="numeric" className="flow-input" placeholder="(11) 99999-9999"
               value={whatsapp} onChange={(e) => setWhatsapp(maskPhone(e.target.value))} onKeyDown={onEnter(submitStep4)} />
             <label className="mb-8 flex cursor-pointer items-start gap-3 text-sm text-muted-foreground">
-              <input type="checkbox" className="mt-1 h-4 w-4 accent-[var(--primary)]" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
+              <input type="checkbox" className="flow-check" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
               <span>Li e concordo com a Política de Privacidade e autorizo o contato da equipe Scase.</span>
             </label>
             <button className="flow-btn" disabled={busy} onClick={submitStep4}>{busy ? "Enviando..." : "Ver horários disponíveis"}</button>
@@ -152,9 +167,10 @@ export function LeadFlow() {
         )}
         {stage === "schedule" && (
           <>
-            <h2 className="flow-title">Agora escolha o melhor horário para conversarmos.</h2>
-            <p className="-mt-4 mb-2 text-muted-foreground">Selecione um dia e horário disponível para falar com a equipe Scase.</p>
-            <p className="mb-8 text-xs tracking-widest text-muted-foreground uppercase">
+            <p className="flow-eyebrow">05 / Reunião</p>
+            <h2 className="flow-title">Escolha o melhor horário para conversarmos.</h2>
+            <p className="flow-sub">Selecione um dia e horário disponível para falar com o time da Scase.</p>
+            <p className="font-mono-label mb-8">
               Duração: {avail?.duration ?? 30} min · Horário de Brasília
             </p>
             {!avail && !error && <p className="text-muted-foreground">Carregando horários…</p>}
@@ -182,8 +198,9 @@ export function LeadFlow() {
         )}
         {stage === "done" && booked && (
           <>
-            <h2 className="flow-title">Reunião agendada.</h2>
-            <p className="-mt-4 mb-8 text-muted-foreground">Seu horário está reservado. Enviamos os detalhes para o seu e-mail.</p>
+            <p className="flow-eyebrow">06 / Confirmado</p>
+            <h2 className="flow-title">Reunião agendada<span className="text-primary">.</span></h2>
+            <p className="flow-sub">Seu horário está reservado. Os detalhes foram enviados para o seu e-mail.</p>
             <dl className="mb-8 grid gap-4 border-y border-border py-6 text-sm">
               <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Data</dt><dd className="capitalize">{fmtLong(booked.appointment_start)}</dd></div>
               <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Horário</dt><dd>{fmtTime(booked.appointment_start)} (Brasília)</dd></div>
@@ -193,8 +210,8 @@ export function LeadFlow() {
                   <dd><a className="text-primary underline" href={booked.meeting_url} target="_blank" rel="noreferrer">Entrar na reunião</a></dd></div>
               )}
             </dl>
-            <a className="flow-btn inline-flex" href={gcalLink} target="_blank" rel="noreferrer">Adicionar ao calendário</a>
-            <p className="mt-10 whitespace-pre-line font-display text-xl">{"Nos vemos em breve.\nEquipe Scase."}</p>
+            <a className="flow-btn" href={gcalLink} target="_blank" rel="noreferrer">Adicionar ao calendário</a>
+            <p className="mt-12 whitespace-pre-line text-2xl font-bold tracking-tight">{"Nos vemos em breve.\nEquipe Scase."}</p>
           </>
         )}
         {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
