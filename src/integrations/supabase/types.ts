@@ -14,7 +14,81 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      leads: {
+        Row: {
+          appointment_date: string | null
+          appointment_end: string | null
+          appointment_start: string | null
+          appointment_status: string
+          calendar_event_id: string | null
+          created_at: string
+          email: string
+          empresa: string
+          fbclid: string | null
+          gclid: string | null
+          id: string
+          investe_marketing: string
+          landing_page: string | null
+          meeting_url: string | null
+          referrer: string | null
+          status: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+          whatsapp: string
+        }
+        Insert: {
+          appointment_date?: string | null
+          appointment_end?: string | null
+          appointment_start?: string | null
+          appointment_status?: string
+          calendar_event_id?: string | null
+          created_at?: string
+          email: string
+          empresa: string
+          fbclid?: string | null
+          gclid?: string | null
+          id?: string
+          investe_marketing: string
+          landing_page?: string | null
+          meeting_url?: string | null
+          referrer?: string | null
+          status?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          whatsapp: string
+        }
+        Update: {
+          appointment_date?: string | null
+          appointment_end?: string | null
+          appointment_start?: string | null
+          appointment_status?: string
+          calendar_event_id?: string | null
+          created_at?: string
+          email?: string
+          empresa?: string
+          fbclid?: string | null
+          gclid?: string | null
+          id?: string
+          investe_marketing?: string
+          landing_page?: string | null
+          meeting_url?: string | null
+          referrer?: string | null
+          status?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          whatsapp?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
