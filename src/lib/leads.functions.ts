@@ -34,10 +34,10 @@ async function admin() {
   return supabaseAdmin;
 }
 
-const opt = z.string().trim().max(500).optional().nullable();
+const opt = z.string().trim().max(500).nullable().default(null);
 
 export const saveLead = createServerFn({ method: "POST" })
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         empresa: z.string().trim().min(1).max(150),
@@ -75,7 +75,7 @@ export const getAvailability = createServerFn({ method: "GET" }).handler(async (
     }),
   });
   const busy: { start: string; end: string }[] = fb.calendars?.primary?.busy ?? [];
-  const busyR = busy.map((b) => [Date.parse(b.start), Date.parse(b.end)]);
+  const busyR: [number, number][] = busy.map((b) => [Date.parse(b.start), Date.parse(b.end)]);
   const minStart = now.getTime() + 2 * 3600_000;
   const days: { date: string; slots: string[] }[] = [];
   for (let i = 0; i <= DAYS_AHEAD; i++) {
@@ -98,7 +98,7 @@ export const getAvailability = createServerFn({ method: "GET" }).handler(async (
 });
 
 export const bookSlot = createServerFn({ method: "POST" })
-  .inputValidator((d) =>
+  .validator((d) =>
     z.object({ leadId: z.string().uuid(), start: z.string().datetime() }).parse(d),
   )
   .handler(async ({ data }) => {
