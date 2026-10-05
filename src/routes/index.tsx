@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { LeadFlow } from "@/components/LeadFlow";
-import logo from "@/assets/logo-scase.webp.asset.json";
+import logo from "@/assets/logo-scase.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
