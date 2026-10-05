@@ -20,7 +20,7 @@ function Index() {
   return (
     <main className="flex min-h-screen flex-col px-5 sm:px-10">
       <header className="flex h-20 items-center">
-        <img src={logo.url} alt="Agência Scase" className="h-7 w-auto" />
+        <img src={logo} alt="Agência Scase" className="h-7 w-auto" />
       </header>
       <section className="flex flex-1 items-center justify-center py-12 sm:py-20">
         <LeadFlow />
